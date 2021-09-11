@@ -1,0 +1,16 @@
+ID,Name,Limit,unit,note
+301,Calcium,2500,mg,IOM
+421,Choline,3500,mg,IOM
+312,Copper,10,mg,IOM
+303,Iron,45,mg,IOM
+315,Manganese,11,mg,IOM
+305,Phosphorus,4000,mg,IOM
+317,Selenium,400,mcg,IOM
+307,Sodium,2300,mg,IOM
+318,"Vitamin A (1 IU=0.3mcg retinol)",10000,IU,IOM
+415,"Vitamin B6",100,mg,IOM
+401,"Vitamin C",2000,mg,IOM
+324,"Vitamin D (1 IU= 0.025mcg)",4000,IU,IOM
+323,"Vitamin E",1000,mg,IOM
+430,"Vitamin K",1000,mcg,Rasmussen
+309,Zinc,40,mg,IOM
