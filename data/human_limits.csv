@@ -6,7 +6,7 @@ ID,Name,Limit,unit,note
 315,Manganese,11,mg,IOM
 305,Phosphorus,4000,mg,IOM
 317,Selenium,400,mcg,IOM
-307,Sodium,2300,mg,IOM
+307,Sodium,5000,mg,dx.doi.org/10.1016/S0140-6736(18)31376-X
 318,"Vitamin A (1 IU=0.3mcg retinol)",10000,IU,IOM
 415,"Vitamin B6",100,mg,IOM
 401,"Vitamin C",2000,mg,IOM
