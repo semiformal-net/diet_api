@@ -60,3 +60,23 @@ Where `/tmp/json.txt` contains the inputs,
  "metric_weights":[1]
 }
 ```
+
+## Deploy with Google cloud run
+
+ 1. Set up a new project in GCP
+ 2. Open cloud shell
+ 3. Clone this repo to cloud shell: `git clone https://github.com/semiformal-net/diet_api.git`
+ 4. `cd diet_api`
+ 5. `export GOOGLE_CLOUD_PROJECT=$(gcloud config get-value project)`
+ 6. `docker build . -f Dockerfile -t "gcr.io/${GOOGLE_CLOUD_PROJECT}/diet_api:latest"`
+ 7. `gcloud auth configure-docker` 
+ 8. `docker push "gcr.io/${GOOGLE_CLOUD_PROJECT}/diet_api:latest"`
+ 9. `gcloud run deploy dietapi --region us-central1 --image gcr.io/${GOOGLE_CLOUD_PROJECT}/diet_api:latest` (If prompted to enable various APIs on this project say yes)
+ 10. Select yes to allow unauthenticated invocations
+ 11. Note the url from `gcloud run services describe dietapi --region us-central1 --format='value(status.url)'`
+
+Hit the API with curl:
+
+```
+curl -i -H "Content-Type: application/json" -X POST -d @/tmp/json.txt https://dietapi-jnb6dn7x6q-uc.a.run.app/find_diet
+```
