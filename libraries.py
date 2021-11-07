@@ -86,7 +86,7 @@ def load_data():
     ( long_desc like  '%, raw,%' or long_desc like  '%, raw' or long_desc like  '%, uncooked,%' or long_desc like  '%, uncooked' )  )
     """
         
-    conn = sqlite3.connect('data/usda.sql3')
+    conn = sqlite3.connect('/data/usda.sql3')
     tmp=pandas.read_sql(nutrient_sql,conn)
     nutrients=tmp.pivot(index='food_id', columns='nutrient_id', values='amount')
     nutrients=nutrients.fillna(0).astype('float32')
@@ -95,7 +95,7 @@ def load_data():
     
     #TODO: remove dupe records from input file -- this assumes no dupes!
     
-    tmp=pandas.read_csv('data/human_requirements.csv')
+    tmp=pandas.read_csv('/data/human_requirements.csv')
     y=nutrients.iloc[0,:] # start with the first row of the nutrients table
     y=y.fillna(0) # makes sure all values are filled: NaN->0
     y.columns=nutrients.columns # steal the column indices
@@ -104,7 +104,7 @@ def load_data():
     y.loc[tmp.iloc[:,0]] = tmp.iloc[:,2].values # fill y with values read from csv ( why .values? see https://stackoverflow.com/questions/24419769/pandas-copying-using-iloc-not-working-as-expected )
     reqd=y.astype('float32')
     
-    tmp=pandas.read_csv('data/human_limits.csv')
+    tmp=pandas.read_csv('/data/human_limits.csv')
     y=nutrients.iloc[0,:] # start with the first row of the nutrients table
     y=y.fillna(1e10) # makes sure all values are filled: NaN->1e10
     y.columns=nutrients.columns # steal the column indices

@@ -87,15 +87,15 @@ def find_diet():
     toolbox.register("evaluate", evaluate, nut=nutrients,limt=limt,reqd=reqd,metric_nutrients=metric_nutrients,metric_weights=metric_weights)
 
     # used to make a seed population (only) ; per: https://deap.readthedocs.io/en/master/tutorials/basic/part1.html?highlight=seeding#seeding-a-population
-    toolbox.register("population_guess", InitPopulation, list, creator.Individual, N_FOODS,Nclust,Nseed,limt,reqd,nutrients )
+    toolbox.register("population_guess", InitPopulation, list, creator.Individual, N_FOODS,Nclust,Nseed,clust )
 
     stats = tools.Statistics(key=lambda ind: ind.fitness.values)
     stats.register("min", numpy.min)
     stats.register("median", numpy.median)
     stats.register("max", numpy.max)
     
-    pop = toolbox.population(n=300) # totally random initial population
-    #pop = toolbox.population_guess()
+    #pop = toolbox.population(n=300) # totally random initial population
+    pop = toolbox.population_guess()
     pop, logbook = algorithms.eaSimple(pop, toolbox, cxpb=0.5, mutpb=0.2, ngen=50,stats=stats, verbose=True)
     
     # clean up
