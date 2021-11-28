@@ -1,6 +1,5 @@
 import sys
 from libraries import *
-from flask import Flask, request, jsonify
 from os import path
 import pickle
 import pandas
@@ -10,26 +9,17 @@ from cvxopt import matrix, solvers # an alternative linear programming library
 import random
 from time import time
 import multiprocessing
+import json
 
 solvers.options['show_progress'] = False
 solvers.options['glpk'] = {'msg_lev' : 'GLP_MSG_OFF'} #mute all output from glpk
 
+def find_diet(nfoods=6,exclude_food_ids=[], metric_nutrients=[208],metric_weights=[1]):
 
-app = Flask(__name__)
-
-@app.route('/foo', methods=['POST']) 
-def foo():
-    data = request.json
-    return jsonify(data)
-
-@app.route('/find_diet', methods=['POST']) 
-def find_diet():
-
-    data = request.json
-    N_FOODS=data['nfoods']
-    exclude_food_ids=data['exclude_food_ids']
-    metric_nutrients=data['metric_nutrients']
-    metric_weights=data['metric_weights']
+    N_FOODS=nfoods
+    exclude_food_ids=exclude_food_ids
+    metric_nutrients=metric_nutrients
+    metric_weights=metric_weights
 
     #
     # Internal constants
@@ -96,7 +86,7 @@ def find_diet():
     
     #pop = toolbox.population(n=300) # totally random initial population
     pop = toolbox.population_guess()
-    pop, logbook = algorithms.eaSimple(pop, toolbox, cxpb=0.5, mutpb=0.2, ngen=50,stats=stats, verbose=True)
+    pop, logbook = algorithms.eaSimple(pop, toolbox, cxpb=0.5, mutpb=0.2, ngen=10,stats=stats, verbose=True) # verbose=False for prod
     
     # clean up
     pool.close()
@@ -125,7 +115,15 @@ def find_diet():
     food_amounts=list(numpy.round(abs(food_amounts),5))
     food_ids=list(nt.index)
     
-    return(jsonify({ 'food_ids':food_ids, 'food_amounts':food_amounts }))
+    return { 'food_ids':food_ids, 'food_amounts':food_amounts }
+
+def main():
+    with open('query.json') as f:
+        queries=json.load(f)
+
+    for query in queries:
+        result=find_diet(nfoods=query['nfoods'],exclude_food_ids=query['exclude_food_ids'], metric_nutrients=query['metric_nutrients'],metric_weights=query['metric_weights'])
+        print(result)
 
 if __name__ == "__main__":
-    app.run(debug=True,host="0.0.0.0", port=int(os.environ.get("PORT", 8080)))
+    main()

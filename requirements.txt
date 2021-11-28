@@ -1,7 +1,5 @@
 # requirements
 numpy
 pandas
-Flask
 cvxopt
 deap
-gunicorn
