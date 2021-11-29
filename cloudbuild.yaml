@@ -16,6 +16,6 @@ steps:
   name: 'gcr.io/cloud-builders/docker'
   args: [ 'push', 'gcr.io/diets-325702/diet_api:batch']
 
-- id: 'deploy image'
-  name: 'gcr.io/cloud-builders/gcloud'
-  args: ['compute', 'instances', 'create-with-container', 'dietapibatch', '--zone=us-east1-b', '--container-image=gcr.io/diets-325702/diet_api:batch','--machine-type=e2-highcpu-4', '--network-tier=STANDARD','--network=default','--no-address','--image-project=cos-cloud','--image-family=cos-stable']
+#- id: 'deploy image'
+#  name: 'gcr.io/cloud-builders/gcloud'
+#  args: ['compute', 'instances', 'create-with-container', 'dietapibatch', '--zone=us-east1-b', '--container-image=gcr.io/diets-325702/diet_api:batch','--machine-type=e2-highcpu-4', '--network-tier=STANDARD','--network=default','--no-address','--image-project=cos-cloud','--image-family=cos-stable']

@@ -1,0 +1,28 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  # Unique key of the Job instance
+  name: dietapibatch
+spec:
+  activeDeadlineSeconds: 100
+  ttlSecondsAfterFinished: 100
+  template:
+    metadata:
+      name: dietapibatch
+    spec:
+      containers:
+      - name: dietapibatch
+        image: gcr.io/diets-325702/diet_api:batch
+#        command: ["perl"]
+#        args: ["-Mbignum=bpi", "-wle", "print bpi(2000)"]
+      # Do not restart containers after they exit
+        resources:
+          limits:
+            memory: "1Gi"
+            cpu: "900m"
+          requests:
+            memory: "1Gi"
+            cpu: "500m"
+      restartPolicy: Never
+  # of retries before marking as failed.
+  backoffLimit: 1
