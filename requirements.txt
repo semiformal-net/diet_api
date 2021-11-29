@@ -3,4 +3,3 @@ numpy
 pandas
 cvxopt
 deap
-google-cloud-storage

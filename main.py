@@ -1,6 +1,6 @@
 import sys
 from libraries import *
-from os import path
+from os import path,linesep
 import pickle
 import pandas
 import numpy
@@ -10,27 +10,9 @@ import random
 from time import time
 import multiprocessing
 import json
-from google.cloud import storage
 
 solvers.options['show_progress'] = False
 solvers.options['glpk'] = {'msg_lev' : 'GLP_MSG_OFF'} #mute all output from glpk
-
-def upload_to_bucket(blob_name, path_to_file, bucket_name):
-    """ Upload data to a bucket"""
-
-    # Explicitly use service account credentials by specifying the private key
-    # file.
-    storage_client = storage.Client.from_service_account_json(
-        'creds.json')
-
-    #print(buckets = list(storage_client.list_buckets())
-
-    bucket = storage_client.get_bucket(bucket_name)
-    blob = bucket.blob(blob_name)
-    blob.upload_from_filename(path_to_file)
-
-    #returns a public url
-    return blob.public_url
 
 def find_diet(nfoods=6,exclude_food_ids=[], metric_nutrients=[208],metric_weights=[1]):
 
@@ -138,12 +120,15 @@ def find_diet(nfoods=6,exclude_food_ids=[], metric_nutrients=[208],metric_weight
 def main():
     with open('query.json') as f:
         queries=json.load(f)
-
-    upload_to_bucket('query.json', './query.json', 'dietbatch')
-
+    output=[]
     for query in queries:
         result=find_diet(nfoods=query['nfoods'],exclude_food_ids=query['exclude_food_ids'], metric_nutrients=query['metric_nutrients'],metric_weights=query['metric_weights'])
         print(result)
+        output.append(result)
+
+    with open('/workspace/output.json', 'w') as f:
+        json.dump(output, f)
+        f.write(linesep)
 
 if __name__ == "__main__":
     main()

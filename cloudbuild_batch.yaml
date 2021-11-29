@@ -1,0 +1,13 @@
+steps:
+- id: 'diet batch'
+  name: 'gcr.io/diets-325702/diet_api:batch'
+
+- name: 'gcr.io/cloud-builders/gsutil'
+  entrypoint: 'bash'
+  args:
+  - '-c'
+  - |
+    gsutil cp /workspace/output.json gs://dietbatch/
+
+options:
+  machineType: 'N1_HIGHCPU_8'
