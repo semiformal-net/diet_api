@@ -114,8 +114,20 @@ def find_diet(nfoods=6,exclude_food_ids=[], metric_nutrients=[208],metric_weight
     food_amounts=numpy.array(o['x'])[:,0]
     food_amounts=list(numpy.round(abs(food_amounts),5))
     food_ids=list(nt.index)
-    
-    return { 'food_ids':food_ids, 'food_amounts':food_amounts }
+
+    raw_amount={}
+    scaled_amount={}
+    food_description={}
+    for i,v in enumerate(food_ids):
+        if food_amounts[i] > 0:
+            raw_amount[v]=food_amounts[i]
+            scaled_amount[v]=food_amounts[i]*100
+            food_description[v]=food_desc.loc[v,:].values[0]
+    out={}
+    out['raw_amount']=raw_amount
+    out['scaled_amount']=scaled_amount
+    out['food_description']=food_description
+    return out
 
 def main():
     with open('query.json') as f:
