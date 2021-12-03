@@ -115,6 +115,8 @@ def find_diet(nfoods=6,exclude_food_ids=[], metric_nutrients=[208],metric_weight
     food_amounts=list(numpy.round(abs(food_amounts),5))
     food_ids=list(nt.index)
 
+    ids=[]
+    amt=[]
     raw_amount={}
     scaled_amount={}
     food_description={}
@@ -123,10 +125,24 @@ def find_diet(nfoods=6,exclude_food_ids=[], metric_nutrients=[208],metric_weight
             raw_amount[v]=food_amounts[i]
             scaled_amount[v]=food_amounts[i]*100
             food_description[v]=food_desc.loc[v,:].values[0]
+            ids.append(v)
+            amt.append(food_amounts[i])
+
+    nutrient_full=nutrients.loc[ ids  ,:].copy()
+    nutrient_full=nutrient_full.apply( lambda x: x * numpy.array(amt) , axis=0 ) # multiply by food amounts
+
+    nutrient_full.columns=nutrient_desc.loc[nutrient_full.columns,'name']
+    nutrient_full['Description']=food_desc.loc[nutrient_full.index,:].values
+    nutrient_full=nutrient_full.set_index(['Description']).transpose()
+
+    nutrient_full['Total']=nutrient_full.sum(axis=1,numeric_only=True)
+    nutrient_full.to_dict()
+
     out={}
     out['raw_amount']=raw_amount
     out['scaled_amount']=scaled_amount
     out['food_description']=food_description
+    out['nutrient_full']=nutrient_full.to_dict()
     return out
 
 def main():
