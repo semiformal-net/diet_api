@@ -89,7 +89,7 @@ def find_diet(nfoods=6,exclude_food_ids=[], metric_nutrients=[208],metric_weight
     
     #pop = toolbox.population(n=300) # totally random initial population
     pop = toolbox.population_guess()
-    pop, logbook = algorithms.eaSimple(pop, toolbox, cxpb=0.5, mutpb=0.2, ngen=10,stats=stats, verbose=True) # verbose=False for prod
+    pop, logbook = algorithms.eaSimple(pop, toolbox, cxpb=0.5, mutpb=0.2, ngen=10,stats=stats, verbose=True, halloffame=hof) # verbose=False for prod
     
     # clean up
     pool.close()
