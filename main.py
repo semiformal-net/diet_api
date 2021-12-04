@@ -79,6 +79,8 @@ def find_diet(nfoods=6,exclude_food_ids=[], metric_nutrients=[208],metric_weight
     # used to make a seed population (only) ; per: https://deap.readthedocs.io/en/master/tutorials/basic/part1.html?highlight=seeding#seeding-a-population
     toolbox.register("population_guess", InitPopulation, list, creator.Individual, N_FOODS,Nclust,Nseed,clust )
 
+    hof = tools.HallOfFame(500)
+
     stats = tools.Statistics(key=lambda ind: ind.fitness.values)
     stats.register("min", numpy.min)
     stats.register("median", numpy.median)
@@ -143,6 +145,7 @@ def find_diet(nfoods=6,exclude_food_ids=[], metric_nutrients=[208],metric_weight
     out['scaled_amount']=scaled_amount
     out['food_description']=food_description
     out['nutrient_full']=nutrient_full.to_dict()
+    out['halloffame']=[ {'candidate':i,'score':i.fitness.values[0]} for i in hof[1:51] ]
     return out
 
 def main():
