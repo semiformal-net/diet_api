@@ -44,8 +44,8 @@ def find_diet(nfoods=6,exclude_food_ids=[], metric_nutrients=[208],metric_weight
     # Load food clusters
     #
     cluster_food_count=0
-    if path.exists('/clust.pkl'):
-        clust=pickle.load( open( "/clust.pkl", "rb" ) )
+    if path.exists('./clust.pkl'):
+        clust=pickle.load( open( "./clust.pkl", "rb" ) )
         print( '[*] Found pickle file with %d clusters and %d foods' % (clust.max()+1,len(clust)) )
         Nclust=clust.max()+1
         cluster_food_count=len(clust)
