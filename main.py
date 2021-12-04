@@ -10,6 +10,7 @@ import random
 from time import time
 import multiprocessing
 import json
+import datetime
 
 solvers.options['show_progress'] = False
 solvers.options['glpk'] = {'msg_lev' : 'GLP_MSG_OFF'} #mute all output from glpk
@@ -141,6 +142,7 @@ def find_diet(nfoods=6,exclude_food_ids=[], metric_nutrients=[208],metric_weight
     nutrient_full.to_dict()
 
     out={}
+    out['time_utc']=str(datetime.datetime.utcnow())
     out['raw_amount']=raw_amount
     out['scaled_amount']=scaled_amount
     out['food_description']=food_description
