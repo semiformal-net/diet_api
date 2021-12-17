@@ -127,7 +127,7 @@ def load_data():
 # This is how deap wants its evaluate function:
 #  it accepts one individual (one basket of foods)
 #  and returns a tuple of fitness
-def evaluate(individual, nut,limt,reqd,metric_nutrients=[208],metric_weights=[1]):
+def evaluate(individual, nut,limt,reqd,targets):
     try:
         nt=nut.iloc[individual,:]
     except:
@@ -155,8 +155,16 @@ def evaluate(individual, nut,limt,reqd,metric_nutrients=[208],metric_weights=[1]
     if o['status'] != 'optimal':
         fit=9e9
     else:
-        fit = numpy.dot( numpy.array(o['x']).transpose(), nt.loc[:,metric_nutrients].values * numpy.array(metric_weights) ).item(0)     #numpy.dot(nt.loc[:,metric_nutrients].values,numpy.array(o['x'])).item(0)
+        diet_nutrients=nt.multiply(numpy.array(o['x']),axis=0).sum(axis=0)
+        fit = ev(diet_nutrients, pandas.Series(targets))
+        #numpy.dot( numpy.array(o['x']).transpose(), nt.loc[:,metric_nutrients].values * numpy.array(metric_weights) ).item(0)     #numpy.dot(nt.loc[:,metric_nutrients].values,numpy.array(o['x'])).item(0)
     return (fit,)    
+
+def ev(diet_nutrients,targets):
+    #
+    # todo: normalize
+    #
+    return (diet_nutrients[targets.index] + targets).sum()
 
 def InitPopulation( pcls, ind_init,nfood, nclust, nseed,clust):
     
