@@ -16,12 +16,16 @@ from time import time
 
 def load_data():
     # this SQL selects the FOOD_ID, NUTRIENT_ID and AMOUNT and does some manual filtering of things people don't eat
+    #
+    # A note: the DB contains entrieds for energy in two different units. 208 and 268 are bother "energy" but one is kcal the other is j. Having both causes collision errors in the logic so I dump 268
+    #
     nutrient_sql="""
     select 
            a.food_id ,a.nutrient_id,a.amount from  nutrition as a
     inner join food as b on
            a.food_id=b.id
     where 
+           a.nutrient_id not in (268) and -- both 208 and 268 are labeled as energy, which causes problems
            b.food_group_id not in (200,300,800,1800,2100,2200,3500,3600) -- unappealing groups like baby-food and herbs
            and 
            a.food_id not in (1045,1046,1047,1048,1050,1072,1112,1114,1163,1185,1188,1189,1190, -- these foods are gross, or rare, or otherwise blacklisted
@@ -116,7 +120,7 @@ def load_data():
     
     food_desc=pandas.read_sql("select id as food_id, long_desc from food",conn,index_col="food_id")
     
-    nutrient_desc=pandas.read_sql("select id,name from nutrient",conn,index_col="id")
+    nutrient_desc=pandas.read_sql("select id,name from nutrient where id not in (268)",conn,index_col="id")
     
     return (nutrients,reqd,limt,food_desc,nutrient_desc)
 
@@ -124,7 +128,12 @@ def load_data():
 #  it accepts one individual (one basket of foods)
 #  and returns a tuple of fitness
 def evaluate(individual, nut,limt,reqd,metric_nutrients=[208],metric_weights=[1]):
-    nt=nut.iloc[individual,:]
+    try:
+        nt=nut.iloc[individual,:]
+    except:
+        print('[!] Evaluate got bad individual, ',individual)
+        return (9e9,) 
+        
     c = matrix(numpy.repeat(1.0,nt.shape[0]))
     np_G= numpy.concatenate(
                             (   nt.transpose().values, 
