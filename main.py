@@ -15,12 +15,12 @@ import datetime
 solvers.options['show_progress'] = False
 solvers.options['glpk'] = {'msg_lev' : 'GLP_MSG_OFF'} #mute all output from glpk
 
-def find_diet(nfoods=6,exclude_food_ids=[], metric_nutrients=[208],metric_weights=[1]):
+def find_diet(nfoods=6,exclude_food_ids=[],include_food_ids=[], targets={208: 2000},minima={},maxima={}):
 
     N_FOODS=nfoods
     exclude_food_ids=exclude_food_ids
-    metric_nutrients=metric_nutrients
-    metric_weights=metric_weights
+    include_food_ids=include_food_ids
+    targets=targets
 
     #
     # Internal constants
@@ -29,17 +29,13 @@ def find_diet(nfoods=6,exclude_food_ids=[], metric_nutrients=[208],metric_weight
     #
     # Load nutrient data
     #
-    (nutrients,reqd,limt,food_desc,nutrient_desc)=load_data()
+    (nutrients,reqd,limt,food_desc,nutrient_desc,weights_minmax)=load_data()
     print( '[*] Loaded %d foods from database' % nutrients.shape[0] )
-    NT_DIM=nutrients.shape[0]
     
-    #
-    # drop any foods that we passed in exclude list
-    #
-    if len(exclude_food_ids)>0:
-        valid_drop=list(set(nutrients.index) & set(exclude)) # the food ids that are passed and are in the index
-        if len(valid_drop)>0:
-            nutrients.drop(index=valid_drop,inplace=True)
+    if len(minima)>0:
+        reqd=pandas.Series(minima).combine_first(reqd)
+    if len(maxima)>0:
+        limt=pandas.Series(maxima).combine_first(limt)
     
     #
     # Load food clusters
@@ -51,12 +47,37 @@ def find_diet(nfoods=6,exclude_food_ids=[], metric_nutrients=[208],metric_weight
         Nclust=clust.max()+1
         cluster_food_count=len(clust)
     else:
-        print('error')
+        print('[!] Clustering error: 1')
 
     if cluster_food_count != nutrients.shape[0] :
-        print('error')
+        print('[!] Clustering error: 2')
         
     Nclust=clust.max()+1
+    cluster_series=pandas.Series(clust, index=nutrients.index)
+    
+    #
+    # Include and exclude foods.
+    #  the logic is that:
+    #   if include_food_ids: include foods in include_food_ids - exclude_food_ids
+    #   else: include foods in default_food_ids - exclude_food_ids
+    #
+    if len(include_food_ids)>0 or len(exclude_food_ids)>0:
+        drop1=list(set(nutrients.index).symmetric_difference(set(include_food_ids))) # drop items that are in database, but are not in include list
+        if len(drop1)>0:
+            nutrients.drop(index=drop1,inplace=True)
+        drop2=list(set(nutrients.index).intersection(set(exclude_food_ids))) # drop items that are available which are also in the exclude list
+        if len(drop2)>0:
+            nutrients.drop(index=drop2,inplace=True)
+
+    #reset clusters after dropping some foods
+    #clust=cluster_series[nutrients.index].values
+    (clust, factors)=pandas.factorize(cluster_series[nutrients.index[0:100]])
+    Nclust=len(factors)
+    
+    # shape
+    NT_DIM=nutrients.shape[0]
+    
+    print('[*] Working with %d valid foods' % (nutrients.shape[0]) )
     
     creator.create("FitnessMin", base.Fitness, weights=(-1.0,))
     creator.create("Individual", list, fitness=creator.FitnessMin) # an individual comprises a list (of food IDs)
@@ -72,14 +93,14 @@ def find_diet(nfoods=6,exclude_food_ids=[], metric_nutrients=[208],metric_weight
     toolbox.register("population", tools.initRepeat, list, toolbox.individual)
 
     toolbox.register("mate", tools.cxTwoPoint)
-    toolbox.register("mutate", tools.mutUniformInt, low=0, up=NT_DIM, indpb=0.1)
+    toolbox.register("mutate", tools.mutUniformInt, low=0, up=(NT_DIM-1), indpb=0.1)
     #toolbox.register("select", tools.selBest, k=3)
     toolbox.register("select", tools.selTournament, tournsize=10)
-    toolbox.register("evaluate", evaluate, nut=nutrients,limt=limt,reqd=reqd,metric_nutrients=metric_nutrients,metric_weights=metric_weights)
+    toolbox.register("evaluate", evaluate, nut=nutrients,limt=limt,reqd=reqd,weights_minmax=weights_minmax,targets=targets)
 
     # used to make a seed population (only) ; per: https://deap.readthedocs.io/en/master/tutorials/basic/part1.html?highlight=seeding#seeding-a-population
     toolbox.register("population_guess", InitPopulation, list, creator.Individual, N_FOODS,Nclust,Nseed,clust )
-
+    
     hof = tools.HallOfFame(500)
 
     stats = tools.Statistics(key=lambda ind: ind.fitness.values)
@@ -87,18 +108,20 @@ def find_diet(nfoods=6,exclude_food_ids=[], metric_nutrients=[208],metric_weight
     stats.register("median", numpy.median)
     stats.register("max", numpy.max)
     
-    #pop = toolbox.population(n=300) # totally random initial population
-    pop = toolbox.population_guess()
-    pop, logbook = algorithms.eaSimple(pop, toolbox, cxpb=0.5, mutpb=0.2, ngen=10,stats=stats, verbose=True, halloffame=hof) # verbose=False for prod
+    pop = toolbox.population(n=300) # totally random initial population
+    #pop = toolbox.population_guess()
+    pop, logbook = algorithms.eaSimple(pop, toolbox, cxpb=0.5, mutpb=0.2, ngen=50,stats=stats, verbose=True,halloffame=hof) # verbose=False for prod
     
     # clean up
     pool.close()
 
     best=tools.selBest(pop, k=1)
     best=best[0]    
+    
+    print( 'best', best )
 
     # final (sort of redundant LP fit on best diet 
-    evaluate(best, nut=nutrients,limt=limt,reqd=reqd)
+    #evaluate(best, nut=nutrients,limt=limt,reqd=reqd)
     nt=nutrients.iloc[best,:]
     c = matrix(numpy.repeat(1.0,nt.shape[0]))
     np_G= numpy.concatenate(
@@ -133,21 +156,19 @@ def find_diet(nfoods=6,exclude_food_ids=[], metric_nutrients=[208],metric_weight
 
     nutrient_full=nutrients.loc[ ids  ,:].copy()
     nutrient_full=nutrient_full.apply( lambda x: x * numpy.array(amt) , axis=0 ) # multiply by food amounts
-
-    nutrient_full.columns=nutrient_desc.loc[nutrient_full.columns,'name']
-    nutrient_full['Description']=food_desc.loc[nutrient_full.index,:].values
+    nutrient_full=nutrient_full.join( food_desc )
+    nutrient_full=nutrient_full.rename(columns={'long_desc':'Description'})
     nutrient_full=nutrient_full.set_index(['Description']).transpose()
-
+    nutrient_full=nutrient_full.join(nutrient_desc).set_index('name')
     nutrient_full['Total']=nutrient_full.sum(axis=1,numeric_only=True)
-    nutrient_full.to_dict()
-
+    
     out={}
     out['time_utc']=str(datetime.datetime.utcnow())
     out['raw_amount']=raw_amount
     out['scaled_amount']=scaled_amount
     out['food_description']=food_description
     out['nutrient_full']=nutrient_full.to_dict()
-    out['halloffame']=[ {'candidate':i,'score':i.fitness.values[0]} for i in hof[1:51] ]
+    out['halloffame']=[ {'candidate':i,'score':i.fitness.values[0]} for i in hof[0:51] ]
     return out
 
 def main():
@@ -155,9 +176,14 @@ def main():
         queries=json.load(f)
     output=[]
     for query in queries:
-        result=find_diet(nfoods=query['nfoods'],exclude_food_ids=query['exclude_food_ids'], metric_nutrients=query['metric_nutrients'],metric_weights=query['metric_weights'])
-        print(result)
-        output.append(result)
+        
+        query['targets'] = {int(k):int(v) for k,v in query['targets'].items()} # json has to have dict keys as string. we expect them as int. convert.
+        query['minima'] = {int(k):int(v) for k,v in query['minima'].items()} # json has to have dict keys as string. we expect them as int. convert.
+        query['maxima'] = {int(k):int(v) for k,v in query['maxima'].items()} # json has to have dict keys as string. we expect them as int. convert.
+        out=find_diet(nfoods=query['nfoods'],exclude_food_ids=query['exclude_food_ids'],include_food_ids=query['include_food_ids'], 
+                      targets=query['targets'],minima=query['minima'],maxima=query['maxima'])
+        print(out)
+        output.append(out)
 
     with open('/workspace/output.json', 'w') as f:
         json.dump(output, f)

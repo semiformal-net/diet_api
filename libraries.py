@@ -17,7 +17,7 @@ from time import time
 def load_data():
     # this SQL selects the FOOD_ID, NUTRIENT_ID and AMOUNT and does some manual filtering of things people don't eat
     #
-    # A note: the DB contains entrieds for energy in two different units. 208 and 268 are bother "energy" but one is kcal the other is j. Having both causes collision errors in the logic so I dump 268
+    # A note: the DB contains entrieds for energy in two different units. 208 and 268 are both "energy" but one is kcal the other is j. Having both causes collision errors in the logic so I dump 268
     #
     nutrient_sql="""
     select 
