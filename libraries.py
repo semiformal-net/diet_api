@@ -121,13 +121,19 @@ def load_data():
     food_desc=pandas.read_sql("select id as food_id, long_desc from food",conn,index_col="food_id")
     
     nutrient_desc=pandas.read_sql("select id,name from nutrient where id not in (268)",conn,index_col="id")
+
+    # this file contains the weights of standard units of each food item (eg, 1 cup of butter is 200g (or whatever))
+    weights=pandas.read_csv('./data/WEIGHT.txt',sep='^',encoding='latin-1',header=None,names=['food_id','seq','amt','desc','grams','num','stddev'],index_col='food_id')
+    weights_minmax=weights.loc[:,['grams']].groupby(['food_id']).agg( [max, min])
+    # multiindex is a pain - flatten.
+    weights_minmax.columns=['max','min']
     
-    return (nutrients,reqd,limt,food_desc,nutrient_desc)
+    return (nutrients,reqd,limt,food_desc,nutrient_desc,weights_minmax)
 
 # This is how deap wants its evaluate function:
 #  it accepts one individual (one basket of foods)
 #  and returns a tuple of fitness
-def evaluate(individual, nut,limt,reqd,targets):
+def evaluate(individual,nut,limt,reqd,weights_minmax,targets):
     try:
         nt=nut.iloc[individual,:]
     except:
@@ -155,16 +161,47 @@ def evaluate(individual, nut,limt,reqd,targets):
     if o['status'] != 'optimal':
         fit=9e9
     else:
+        ## scale nutrients
+        #nt_scaled=pandas.DataFrame( scaler.transform(nt), columns=nt.columns, index=nt.index)
+        #diet_nutrients_scaled=nt_scaled.multiply(numpy.array(o['x']),axis=0).sum(axis=0)
+        #diet_nutrients_scaled.name='nutrients'
+        ## scale targets
+        #target=pandas.Series(targets,name='targets')
+        #b=nt.iloc[0,:]*0
+        #b=b.replace(0,numpy.nan)
+        #target_scaled=pandas.Series(scaler.transform([target.combine_first(b)])[0,:], index=nt.columns,name='targets')
+        #fit = ev(diet_nutrients_scaled, target_scaled)
+        
+        # weights
+        # the idea here is that each food has some 'common units' like a cup of milk, or a teaspoon of nutmeg
+        # if the diet includes greatly more than the largest standard unit or greatly less than the smallest standard unit, penalize the diet.
+        w=nt.join(weights_minmax).loc[:,['max','min']]
+        w['amt']=numpy.array(o['x'])*100
+        w['under']=numpy.maximum((w['min'] - w['amt'])/w['min'], 0)
+        w['over']=numpy.maximum( (w['amt'] - w['max'])/w['max'], 0)
+        gross=numpy.maximum( w['under'],w['over'] ).sum()
+        
         diet_nutrients=nt.multiply(numpy.array(o['x']),axis=0).sum(axis=0)
-        fit = ev(diet_nutrients, pandas.Series(targets))
+        diet_nutrients.name='nutrients'
+        target=pandas.Series(targets,name='targets')
+        fit = ev(diet_nutrients, target) + gross
         #numpy.dot( numpy.array(o['x']).transpose(), nt.loc[:,metric_nutrients].values * numpy.array(metric_weights) ).item(0)     #numpy.dot(nt.loc[:,metric_nutrients].values,numpy.array(o['x'])).item(0)
     return (fit,)    
 
 def ev(diet_nutrients,targets):
     #
-    # todo: normalize
+    # note: both inputs are pandas.Series() and must have names: nutrients & targets
+    
+    # The philosophy of the optimization is that any target amounts (eg, calories[208] ~= 2000) should be specified in reqd or limt
+    #  here you can minimize a nutrient (ie, minimize carbs)
+    #  and penalize "grossness"
     #
-    return (diet_nutrients[targets.index] + targets).sum()
+    if len(targets) == 0:
+        return 0.0
+    
+    d=pandas.concat([diet_nutrients,targets],axis=1)
+    return d.apply( lambda x: abs(x['nutrients'] - x['targets'])/x['targets'], axis=1 ).sum()
+    #return sum([ (diet_nutrients[i] + targets[i])/targets[i] for i in targets.index ]) #(diet_nutrients[targets.index] + targets).sum()
 
 def InitPopulation( pcls, ind_init,nfood, nclust, nseed,clust):
     
