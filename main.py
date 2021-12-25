@@ -163,6 +163,7 @@ def find_diet(nfoods=6,exclude_food_ids=[],include_food_ids=[], targets={208: 20
     nutrient_full['Total']=nutrient_full.sum(axis=1,numeric_only=True)
     
     out={}
+    out['id']='%x' % random.getrandbits(64)
     out['time_utc']=str(datetime.datetime.utcnow())
     out['raw_amount']=raw_amount
     out['scaled_amount']=scaled_amount
@@ -170,6 +171,73 @@ def find_diet(nfoods=6,exclude_food_ids=[],include_food_ids=[], targets={208: 20
     out['nutrient_full']=nutrient_full.to_dict()
     out['halloffame']=[ {'candidate':i,'score':i.fitness.values[0]} for i in hof[0:51] ]
     return out
+
+def report(json):
+    nutrient_full_html=pandas.DataFrame.from_dict(json['nutrient_full']).style.format(precision=1).to_html()
+    amt=pandas.DataFrame( pandas.Series( json['scaled_amount'] ),columns=['amount (g)'] )
+    nm=pandas.DataFrame( pandas.Series( json['food_description'] ),columns=['name'] )
+    diet_html=nm.join(amt).style.format(precision=1).to_html()
+    header='''
+    <!DOCTYPE html>
+    <html>
+    <head>
+    <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    .row {
+      margin-left:-5px;
+      margin-right:-5px;
+    }
+
+    .column {
+      float: left;
+      width: 50%;
+      padding: 5px;
+    }
+
+    /* Clearfix (clear floats) */
+    .row::after {
+      content: "";
+      clear: both;
+      display: table;
+    }
+    
+    table {
+      border-collapse: collapse;
+      border-spacing: 0;
+      width: 100%;
+      border: 1px solid #ddd;
+    }
+
+    th, td {
+      text-align: left;
+      padding: 16px;
+      border: 1px solid grey;
+      text-align: center;
+    }
+
+    tr:nth-child(even) {
+      background-color: #f2f2f2;
+    }
+    </style>
+    </head>
+    <body>
+    '''
+    title='<h2>Diet report</h2><p>ID: {}</p><p>Time: {}</p>'.format( json['id'],json['time_utc'] )
+    
+    full_json_data='<a href="data:application/json;charset=UTF-8,{}" download="raw_diet_output.json">raw json</a>'.format( json )
+    
+    tables='<div class="row"><div class="column">' + diet_html +'</div><div class="column">'+ nutrient_full_html + '</div></div>'
+    
+    footer='''
+    </body>
+    </html>
+    '''
+    with open('/workspace/report.html','w') as f:
+        f.write( header+title+full_json_data+tables+footer )
+    
 
 def main():
     with open('query.json') as f:
