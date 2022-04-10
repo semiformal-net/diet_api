@@ -44,34 +44,39 @@ Docker container with `main.py` entrypoint. The container should run once, finis
 
 ## Testing locally
 
-Note that the container expects a `/workspace` directory. Google cloud build will make this automatically, but if running locally you need to mount it.
+Note that the container expects a `/workspace` directory containing a file called `query.json`. Google cloud build will make this automatically, but if running locally you need to mount it.
 
 ```
 docker build --tag find_diet:batch .
 mkdir /tmp/workspace/
+cp query.json /tmp/workspace
 docker run -v /tmp/workspace/:/workspace find_diet:batch
 ```
 
-The container will grind all available CPUs on your machine then output `/tmp/workspace/output.json`
+The container will grind all available CPUs on your machine then output `/tmp/workspace/report_*.html`
 
 ## Deploy with Google cloud run
 
+1. Make a new project in GCP. Call it "diet-batch"
+
+2. Set the project and make a bucket
+
 ```
-PROJECT_ID=diets-325702
+PROJECT_ID=diet-batch
 
 gcloud config set project $PROJECT_ID
 
 #make a bucket
-gsutil mb gs://dietbatch
+gsutil mb gs://dietbatchworkspace
 
-# build gcr.io/diets-325702/diet_api:batch
+# build gcr.io/diets-batch/diet_api:batch
 #  this container contains a query.json file with diet jobs to run
-#  the container outputs the results to /workspace/output.json (hardcoded)
+#  the container outputs the results to /workspace/report_*.html
 
 gcloud builds submit --config cloudbuild.yaml
 
 # this "build" runs the above container
-# the container outputs the results to /workspace/output.json (hardcoded)
+# the container outputs the results to /workspace/report_*.html
 #  (cloud build mounts /workspace for all jobs by default)
 # the build job uploads the output.json to gs://dietbatch
 gcloud builds submit --config cloudbuild_batch.yaml

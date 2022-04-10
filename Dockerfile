@@ -6,11 +6,13 @@ FROM python:3.9-slim
 ENV PYTHONUNBUFFERED True
 
 # Copy local code to the container image.
+# note that this container does not contain an input `query.json`
 ENV APP_HOME /app
 WORKDIR $APP_HOME
-COPY . ./
-#COPY ./data /data
-#COPY ./clust.pkl /clust.pkl
+COPY ./data data
+COPY ./clust.pkl .
+COPY ./requirements.txt .
+COPY *.py ./
 
 # Install production dependencies.
 RUN pip install --no-cache-dir -r requirements.txt

@@ -221,7 +221,7 @@ def find_diet(nfoods=6,exclude_food_ids=[],include_food_ids=[], targets={208: 20
     #pop = toolbox.population_guess()
     #pop, logbook = algorithms.eaSimple(pop, toolbox, cxpb=0.2, mutpb=0.2, ngen=50,stats=stats, verbose=True,halloffame=hof) # verbose=False for prod
     #pop, logbook = algorithms.eaMuPlusLambda(pop, toolbox, cxpb=0.5, mutpb=0.1, ngen=50, stats=stats, halloffame=hof, verbose=True, mu=300, lambda_=300)
-    pop, logbook = ea(pop, toolbox, cxpb=0.2, mutpb=0.2, ngen=50,stats=stats, verbose=True,halloffame=hof,fitness_critical=1.0) # verbose=False for prod
+    pop, logbook = ea(pop, toolbox, cxpb=0.2, mutpb=0.2, ngen=250,stats=stats, verbose=True,halloffame=hof,fitness_critical=1.0) # verbose=False for prod
     
     # clean up
     pool.close()
@@ -347,12 +347,26 @@ def report(json):
     </body>
     </html>
     '''
-    with open('/workspace/report.html','w') as f:
+    with open('/workspace/report_{}.html'.format(json['id']),'w') as f:
         f.write( header+title+full_json_data+tables+footer )
     
 
 def main():
-    with open('query.json') as f:
+
+    if not path.exists('query.json'):
+        if not path.exists('/workspace/query.json'):
+            print('Error: query.json not found')
+            sys.exit(1)
+        else:
+            query_json_path='/workspace/query.json'
+    else:
+        query_json_path='query.json'
+
+    if not path.exists('clust.pkl'):
+        print('Error: clust.pkl not found')
+        sys.exit(1)
+
+    with open(query_json_path) as f:
         queries=json.load(f)
     output=[]
     for query in queries:
@@ -364,10 +378,11 @@ def main():
                       targets=query['targets'],minima=query['minima'],maxima=query['maxima'])
         print(out)
         output.append(out)
+        report(out)
 
-    with open('/workspace/output.json', 'w') as f:
-        json.dump(output, f)
-        f.write(linesep)
+    #with open('/workspace/output.json', 'w') as f:
+    #    json.dump(output, f)
+    #    f.write(linesep)
 
 if __name__ == "__main__":
     main()
