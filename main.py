@@ -393,12 +393,15 @@ def main():
         queries=json.load(f)
     output=[]
     for query in queries:
-        
         query['targets'] = {int(k):int(v) for k,v in query['targets'].items()} # json has to have dict keys as string. we expect them as int. convert.
         query['minima'] = {int(k):int(v) for k,v in query['minima'].items()} # json has to have dict keys as string. we expect them as int. convert.
         query['maxima'] = {int(k):int(v) for k,v in query['maxima'].items()} # json has to have dict keys as string. we expect them as int. convert.
+        query_id=None
+        if 'id' in query:
+            query_id=query['id']
+
         out=find_diet(nfoods=query['nfoods'],exclude_food_ids=query['exclude_food_ids'],include_food_ids=query['include_food_ids'], 
-                      targets=query['targets'],minima=query['minima'],maxima=query['maxima'])
+                      targets=query['targets'],minima=query['minima'],maxima=query['maxima'],id=query_id)
         print(out)
         output.append(out)
         report(out)
