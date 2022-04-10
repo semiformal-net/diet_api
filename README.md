@@ -75,9 +75,10 @@ gsutil mb gs://dietbatchworkspace
 
 gcloud builds submit --config cloudbuild.yaml
 
-# this "build" runs the above container
-# the container outputs the results to /workspace/report_*.html
-#  (cloud build mounts /workspace for all jobs by default)
-# the build job uploads the output.json to gs://dietbatch
+# this runs the above container
+#  1. first it clones this repo to get a copy of query.json
+#  2. next it runs the container we built above, computing diets
+#  3. finally it uploads the diet reports to the gs://dietbatchworkspace/ bucket
+
 gcloud builds submit --config cloudbuild_batch.yaml
 ```

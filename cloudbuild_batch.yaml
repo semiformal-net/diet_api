@@ -1,13 +1,26 @@
 steps:
+# clone a specific branch for batch runs
+- id: 'clone'
+  name: 'gcr.io/cloud-builders/git'
+  args: ['clone', '-b','batch-run', 'https://github.com/semiformal-net/diet_api.git','/workspace/diet_api-environment']
+
+# clone got the query.json file which is what we are after. move it
+- name: 'gcr.io/cloud-builders/gsutil'
+  entrypoint: 'bash'
+  args:
+  - '-c'
+  - |
+    mv /workspace/diet_api-environment/query.json /workspace
+
 - id: 'diet batch'
-  name: 'gcr.io/diets-325702/diet_api:batch'
+  name: 'gcr.io/diet-batch/diet_api:batch'
 
 - name: 'gcr.io/cloud-builders/gsutil'
   entrypoint: 'bash'
   args:
   - '-c'
   - |
-    gsutil cp /workspace/output.json gs://dietbatch/
+    gsutil cp /workspace/report*.html gs://dietbatchworkspace/
 
 options:
   machineType: 'N1_HIGHCPU_8'
