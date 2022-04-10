@@ -229,6 +229,20 @@ def find_diet(nfoods=6,exclude_food_ids=[],include_food_ids=[], targets={208: 20
     best=tools.selBest(pop, k=1)
     best=best[0]
 
+    # if the algo went through all generations and never found a single viable diet then this cond will be true.
+    all_fitness=[ i.fitness.values[0] for i in hof ]
+    failed_run=False
+    if max(all_fitness) == min(all_fitness):
+        out={}
+        if id is None:
+            out['id']='%x' % random.getrandbits(64)
+        else:
+            out['id']=str(id)
+        out['time_utc']=str(datetime.datetime.utcnow())
+        out['status']='failed'
+        out['halloffame']=[ {'candidate':i,'score':i.fitness.values[0]} for i in hof[0:51] ]
+        return out
+
     # final (sort of redundant LP fit on best diet 
     #evaluate(best, nut=nutrients,limt=limt,reqd=reqd)
     nt=nutrients.iloc[best,:]
@@ -244,7 +258,8 @@ def find_diet(nfoods=6,exclude_food_ids=[],include_food_ids=[], targets={208: 20
                     limt.values, 
                     reqd.multiply(-1.0).values, 
                     numpy.repeat(0.0,nt.shape[0])
-                ) ).astype(numpy.double) )    
+                ) ).astype(numpy.double) )
+
     o = solvers.lp(c, G, h, solver='glpk') # TODO: it crashes here if no viable diet has been found in any generation.
     food_amounts=numpy.array(o['x'])[:,0]
     food_amounts=list(numpy.round(abs(food_amounts),5))
@@ -277,6 +292,7 @@ def find_diet(nfoods=6,exclude_food_ids=[],include_food_ids=[], targets={208: 20
     else:
         out['id']=str(id)
     out['time_utc']=str(datetime.datetime.utcnow())
+    out['status']='succeeded'
     out['raw_amount']=raw_amount
     out['scaled_amount']=scaled_amount
     out['food_description']=food_description
@@ -285,10 +301,6 @@ def find_diet(nfoods=6,exclude_food_ids=[],include_food_ids=[], targets={208: 20
     return out
 
 def report(json):
-    nutrient_full_html=pandas.DataFrame.from_dict(json['nutrient_full']).style.format(precision=1).to_html()
-    amt=pandas.DataFrame( pandas.Series( json['scaled_amount'] ),columns=['amount (g)'] )
-    nm=pandas.DataFrame( pandas.Series( json['food_description'] ),columns=['name'] )
-    diet_html=nm.join(amt).style.format(precision=1).to_html()
     header='''
     <!DOCTYPE html>
     <html>
@@ -341,12 +353,23 @@ def report(json):
     
     full_json_data='<a href="data:application/json;charset=UTF-8,{}" download="raw_diet_output.json">raw json</a>'.format( json )
     
-    tables='<div class="row"><div class="column">' + diet_html +'</div><div class="column">'+ nutrient_full_html + '</div></div>'
-    
     footer='''
     </body>
     </html>
     '''
+    if json['status']=='failed':
+        print('RUN failed!')
+        with open('/workspace/report_{}.html'.format(json['id']),'w') as f:
+            f.write( header+title+'<h2>Failed</h2>'+footer )
+        return
+
+    nutrient_full_html=pandas.DataFrame.from_dict(json['nutrient_full']).style.format(precision=1).to_html()
+    amt=pandas.DataFrame( pandas.Series( json['scaled_amount'] ),columns=['amount (g)'] )
+    nm=pandas.DataFrame( pandas.Series( json['food_description'] ),columns=['name'] )
+    diet_html=nm.join(amt).style.format(precision=1).to_html()
+
+    tables='<div class="row"><div class="column">' + diet_html +'</div><div class="column">'+ nutrient_full_html + '</div></div>'
+
     with open('/workspace/report_{}.html'.format(json['id']),'w') as f:
         f.write( header+title+full_json_data+tables+footer )
     
