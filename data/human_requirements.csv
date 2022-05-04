@@ -1,6 +1,6 @@
 ID,Name,Requirement,unit,note
 203,Protein,53.46,g,IOM-for 81kg male
-301,Calcium,800,mg,IOM
+301,Calcium,1000,mg,andrew
 421,Choline,550,mg,IOM
 312,Copper,0.7,mg,IOM
 432,Folate,320,mcg,IOM
@@ -23,11 +23,11 @@ ID,Name,Requirement,unit,note
 502,Threonine,0.5,g,Rose
 501,Tryptophan,0.25,g,Rose
 510,Valine,0.8,g,Rose
-318,Vitamin A (1 IU=0.3mcg retinol),187,IU,IOM
+318,Vitamin A (1 IU=0.3mcg retinol),900,IU,andrew
 418,Vitamin B12,2,mcg,IOM
 415,Vitamin B6,1.1,mg,IOM
 401,Vitamin C,75,mg,IOM
-324,Vitamin D (1 IU= 0.025mcg),0.25,IU,IOM
+324,Vitamin D (1 IU= 0.025mcg),600,IU,andrew
 323,Vitamin E,12,mg,IOM
 430,Vitamin K,120,mcg,IOM
 309,Zinc,9.4,mg,IOM
